@@ -289,17 +289,87 @@ export default function Page() {
             how to set something like this up manually, but when trying to get a
             project up and running quickly, this is a great solution.
           </p>
+          <h3>Adding a custom domain name</h3>
+          <p className="mb-4">
+            Vercel also makes adding a custom domain name <i>very</i> easy.
+            Again, this is something that would be worth learning how to do
+            manually, but having a way to do this quickly is extremely valuable.
+            <br />
+            <br />
+            First navigate to the "Domains" tab in Vercel (if you don't see
+            this, it might be because you are in the context of a project, and
+            need to click the Vercel logo in the top right to go up a level).
+          </p>
+          <div className="flex justify-center my-8">
+            <img
+              src="/vercel-domains.png"
+              alt="Screenshot showing where the domains tab is in Vercel"
+              className="shadow-lg rounded-lg"
+            ></img>
+          </div>
+          <p className="mb-4">
+            Next click the "Buy" button to purchase a new domain.
+          </p>
+          <div className="flex justify-center my-8">
+            <img
+              src="/vercel-domains-buy.png"
+              alt="Screenshot showing where the buy button is under domains in Vercel"
+              className="shadow-lg rounded-lg"
+            ></img>
+          </div>
+          <p className="mb-4">
+            Finally, search for a domain you'd like to purchase, and then
+            purchase a domain.
+          </p>
+          <div className="flex justify-center my-8">
+            <img
+              src="/vercel-domains-list.png"
+              alt="Screenshot showing where the buy button is under domains in Vercel"
+              className="shadow-lg rounded-lg"
+            ></img>
+          </div>
+          <p className="mb-4">
+            After you have purchased your domain, go back to your project, then
+            Settings, then "Domains". Click the "Add" button, and then select
+            the domain you just purchased in the dropdown, leave environment on
+            "Production" (assuming you want this domain for the production
+            deployment), leave redirect to at "No Redirect" and click "Add
+            Domain". You can choose to set up a redirect to "www." if you'd
+            like, (I just went with the recommended option).
+            <br />
+            <br />
+            It will take a minute or so for Vercel to set up the proper DNS
+            settings and certificates, but once it looks like the screenshot
+            below, your custom domain should be pointing to your website!
+          </p>
+          <div className="flex justify-center my-8">
+            <img
+              src="/vercel-domain-assign.png"
+              alt="Screenshot showing how to add a custom domain to a project in Vercel"
+              className="shadow-lg rounded-lg"
+            ></img>
+          </div>
+          <div className="my-8 p-4 bg-theme-6 text-theme-1 font-semibold flex rounded-lg">
+            <p className="mr-4 font-bold">Note:</p>
+            <p>
+              Domain names work on a system called DNS (Domain Name System)
+              which works off of different servers that map domain names to the
+              IP address of your server. When DNS settings are changed, which
+              Vercel handles for you here, it might take some amount of time for
+              those settings to propogate to different DNS servers. Usually this
+              happens within a few minutes, but don't stress if your domain name
+              doesn't work right away.
+            </p>
+          </div>
           <h3>Everything else</h3>
           <p className="mb-4">
             Without making this a Next.js tutorial, there's not much else to
             cover here. Feel free to check out the repo for this project{" "}
-            <a href="https://github.com/scotthaley/scotthaley.devhttps://github.com/scotthaley/scotthaley.dev">
-              here
-            </a>
-            . In some later articles I will describe how specifically things on
-            this site are built, but for now, hopefully you got something out of
-            this article when it comes to the decisions around your tech stack
-            when starting a new project.
+            <a href="https://github.com/scotthaley/scotthaley.dev">here</a>. In
+            some later articles I will describe how specifically things on this
+            site are built, but for now, hopefully you got something out of this
+            article when it comes to the decisions around your tech stack when
+            starting a new project.
           </p>
         </div>
       </main>
