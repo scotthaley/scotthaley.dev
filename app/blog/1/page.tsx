@@ -4,11 +4,14 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <div className="p-4 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col tems-center sm:items-start">
-        <div className="mb-10 border-b-theme-2 border-b-2 w-full">
-          <h1>How I Built This Website</h1>
-        </div>
+    <main className="flex flex-col tems-center sm:items-start">
+      <div className="mb-10 border-b-theme-2 border-b-2 w-full px-6">
+        <h1>How I Built This Website</h1>
+      </div>
+      <div className="px-6">
+        <p className="mb-8 text-theme-6 text-md">
+          <i>Published Feb 19th, 2025</i>
+        </p>
         <div>
           <p className="mb-4">
             If you just want to see how I built this and you don't care about my
@@ -372,8 +375,7 @@ export default function Page() {
             starting a new project.
           </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
-    </div>
+      </div>
+    </main>
   );
 }
