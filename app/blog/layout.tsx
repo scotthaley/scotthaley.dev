@@ -5,7 +5,9 @@ export default function BlogLayout({
 }>) {
   return (
     <div className="p-4 pb-20 sm:p-20 font-[family-name:var(--font-geist-sans)] max-w-[1000px]">
-      {children}
+      <main className="flex flex-col items-center sm:items-start">
+        {children}
+      </main>
     </div>
   );
 }
