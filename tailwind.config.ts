@@ -20,6 +20,7 @@ export default {
         "theme-5": "var(--theme-color-5)",
         "theme-6": "var(--theme-color-6)",
         "theme-7": "var(--theme-color-7)",
+        "code-bg": "rgb(28, 29, 33)",
       },
       fontSize: {
         // text-caption

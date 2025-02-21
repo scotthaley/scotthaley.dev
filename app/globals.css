@@ -57,3 +57,11 @@ a {
   color: var(--theme-color-5);
   text-decoration: underline;
 }
+
+pre {
+  width: 100%;
+}
+
+code > span.xml {
+  color: rgb(79, 180, 215) !important;
+}

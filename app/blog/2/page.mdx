@@ -1,0 +1,171 @@
+import BigLink from "../../../components/BigLink.tsx"
+
+export const metadata = {
+  title: "Markdown, Please"
+}
+
+# Markdown, Please
+
+<Accent>Published Feb 21st, 2025</Accent>
+
+I knew from the beginning making this website that I'd want the ability
+to write my articles using markdown, but in an effort to get something
+up and running quickly, I just did my first [article](/blog/1) in plain old HTML.
+
+I thought I might need to write a preprocessor myself to convert markdown
+files to the correct format, but it turns Next.js already has a good solution
+for this!
+
+This article from the Next.js team does a great job at explaining how to setup
+your Next.js application to work with markdown:
+
+<BigLink url="https://nextjs.org/docs/pages/building-your-application/configuring/mdx" />
+
+## Implementation for <span className="font-thin">scotthaley.dev</span>
+
+First thing was to add the `withMDX` plugin to Next.js.
+
+```typescript
+---
+file: /next.config.ts
+---
+import type { NextConfig } from "next";
+import createMDX from "@next/mdx";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+  pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
+};
+
+const withMDX = createMDX({});
+
+export default withMDX(nextConfig);
+```
+
+In our `next.config.ts` file, we create an instance of the MDX plugin
+and wrap our `nextConfig` with `withMDX()`.
+
+The next thing we need to do is create a `mdx-components.tsx` file in our project root directory.
+The MDX plugin will not work without this file.
+
+```tsx
+---
+file: /mdx-components.tsx
+---
+import type { MDXComponents } from "mdx/types";
+import Image, { ImageProps } from "next/image";
+
+export function useMDXComponents(components: MDXComponents): MDXComponents {
+  return {
+    h1: ({ children }) => (
+      <div className="mb-10 border-b-theme-2 border-b-2 w-full px-6">
+        <h1>{children}</h1>
+      </div>
+    ),
+    h2: ({ children }) => <h2 className="px-6">{children}</h2>,
+    h3: ({ children }) => <h3 className="px-6">{children}</h3>,
+    h4: ({ children }) => <h4 className="px-6">{children}</h4>,
+    h5: ({ children }) => <h5 className="px-6">{children}</h5>,
+    h6: ({ children }) => <h6 className="px-6">{children}</h6>,
+    p: ({ children }) => <p className="mb-4 px-6">{children}</p>,
+    ol: ({ children }) => (
+      <ol className="list-decimal mt-4 list-inside my-8 px-6">{children}</ol>
+    ),
+    img: (props) => (
+      <Image
+        sizes="100vw"
+        width={0}
+        height={0}
+        className="shadow-lg rounded-lg"
+        style={{ width: "100%", height: "auto" }}
+        {...(props as ImageProps)}
+      />
+    ),
+    ...components,
+  };
+}
+```
+
+There's probably a better way I could have worked out to add the padding I want
+(this padding is so that the horizontal line on the header is slightly larger than the 
+width of the content) but this was a pretty quick way to solve the problem.
+
+With the MDX plugin, your markdown will be converted to HTML tags, and this `useMDXComponents`
+function allows you to map those HTML tags to whatever you want. I've added some basic 
+styling to my header tags and ordered lists, and I've also mapped the `img` tag to 
+the Next.js `Image` component.
+
+The next thing I wanted to add was a nice way to format text for the "Published" text
+at the top of each article.
+
+<Accent>Talking about this format...</Accent>
+
+I found I can add any arbitrary tag to this list and then use that tag in my markdown files.
+So I added a `Accent` tag so that I can format this the way I want.
+
+```tsx
+---
+file: /mdx-components.tsx
+---
+import type { MDXComponents } from "mdx/types";
+import Image, { ImageProps } from "next/image";
+
+export function useMDXComponents(components: MDXComponents): MDXComponents {
+  return {
+    ...,
+    Accent: ({ children }) => (
+      <p className="mb-8 text-theme-6 text-md px-6">
+        <i>{children}</i>
+      </p>
+    ),
+    ...components,
+  };
+}
+```
+
+Now I can use this tag in my markdown files like so:
+
+```markdown
+# Markdown, Please
+
+<Accent>Published Feb 21st, 2025</Accent>
+
+I knew from the beginning making this website that I'd want the ability...
+```
+
+I also added a tag for my Note sections:
+
+```tsx
+---
+file: /mdx-components.tsx
+---
+import type { MDXComponents } from "mdx/types";
+import Image, { ImageProps } from "next/image";
+
+export function useMDXComponents(components: MDXComponents): MDXComponents {
+  return {
+    ...,
+    Accent: ({ children }) => (
+      <p className="mb-8 text-theme-6 text-md px-6">
+        <i>{children}</i>
+      </p>
+    ),
+    Note: ({ children }) => (
+      <div className="px-6">
+        <div className="my-8 p-4 bg-theme-6 text-theme-1 font-semibold flex rounded-lg">
+          <div className="mr-4 font-bold">Note:</div>
+          <div>{children}</div>
+        </div>
+      </div>
+    ),
+    ...components,
+  };
+}
+```
+
+<Note>
+You will get a React error if you don't make these custom tags start with a capital letter.
+</Note>
+
+Then all I had to do was convert my one article I had written to markdown! Bonus value
+that it's now much easier to read these pages in [GitHub](https://github.com/scotthaley/scotthaley.dev/blob/main/app/blog/1/page.mdx).
