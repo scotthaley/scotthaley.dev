@@ -2,102 +2,255 @@
 
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
-import { fetchMutation } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import Groq from "groq-sdk";
+import { initialStory } from "./prompts/initial_story";
+import { generateFirstMessages } from "./prompts/generate_first_messages";
+import { parseNPC } from "./prompts/parse_npc";
+import { parsePlayerContext } from "./prompts/parse_player_context";
+import { parseInitialLocations } from "./prompts/parse_initial_locations";
+import {
+  parsePlayerMessage,
+  PlayerMessageType,
+} from "./prompts/parse_player_message";
+import { parseMessageForEntities } from "./prompts/parse_message_for_entities";
+import { askGM } from "./prompts/ask_gm";
 
-const GM_SYSTEM_MESSAGE = `
-You are a game master that is running a tabletop roleplaying game. Your
-job is to generate different pieces of content as part of the roleplaying game.
-Always respond with only the content being asked of so that your reponse
-can be used without any transormation. Only include quotes if a character 
-is actually speaking.
+export const submitMessage = async (
+  slug: string,
+  message: string,
+  playerId: string,
+) => {
+  const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });
+  const npcs = await fetchQuery(api.dnd.getCampaignNPCs, { dndId: slug });
+  const locations = await fetchQuery(api.dnd.getCampaignLocations, {
+    dndId: slug,
+  });
+  const lastMessage = await fetchQuery(api.dnd.getLastCampaignMessage, {
+    dndId: slug,
+  });
+  const player = await fetchQuery(api.dnd.getPlayer, { playerId });
+
+  if (
+    campaign === null ||
+    lastMessage === null ||
+    player === null ||
+    npcs === null ||
+    locations === null
+  )
+    return;
+
+  // TODO: better player context?
+  const playerContext = `Name: ${player.name}`;
+
+  const response = await parsePlayerMessage(
+    message,
+    campaign.current_context!,
+    lastMessage.message,
+    playerContext,
+  );
+
+  console.log(response);
+
+  if (response === PlayerMessageType.REQUEST_GM_INFO) {
+    const entities =
+      (await parseMessageForEntities(message, locations, npcs)) || [];
+
+    console.log("Entities asked about:", entities);
+
+    const question_context = `
+Campaign Outline: "${campaign.generated_story}"
+
+Information about referenced locations:
+${locations
+  .filter((l) => entities.find((e) => e.id === l._id))
+  .map(
+    (l) => `
+ID: ${l._id},
+NAME: ${l.name},
+DESCRIPTION: ${l.description}
+INFORMATION THE PLAYER KNOWS: ${l.known_information}
+IS THE LOCATION HIDDEN: ${l.hidden}
+--------------------------------------------
+`,
+  )}
+
+Information about referenced NPCs:
+${npcs
+  .filter((npc) => entities.find((e) => e.id === npc._id))
+  .map(
+    (npc) => `
+ID: ${npc._id},
+NAME: ${npc.name},
+DESCRIPTION: ${npc.description}
+IS THE NPC HIDDEN: ${npc.hidden}
+--------------------------------------------
+`,
+  )}
 `;
 
-export async function submitStory(
+    const gm_response = await askGM(
+      message,
+      question_context,
+      lastMessage.message,
+      playerContext,
+    );
+
+    console.log("GM response:", gm_response);
+
+    if (gm_response === null) return;
+
+    const entities_in_response =
+      (await parseMessageForEntities(gm_response, locations, npcs)) || [];
+
+    console.log("Entities from response:", entities_in_response);
+  }
+};
+
+export const submitStory = async (
   description: string,
   slug: string,
   players: Doc<"dnd_players">[],
-) {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-  const story = await initialStory(groq, description, players);
+) => {
+  const story = await initialStory(description, players);
   if (story === null) return;
+
+  console.log(story);
 
   await fetchMutation(api.dnd.updateStory, {
     dndId: slug,
     story,
   });
 
-  const firstMessage = await generateFirstMessage(groq, story);
-  if (firstMessage === null) return;
-
-  await fetchMutation(api.dnd.insertMessage, {
-    dndId: slug,
-    message: firstMessage,
-  });
-}
-
-const initialStory = async (
-  groq: Groq,
-  description: string,
-  players: Doc<"dnd_players">[],
-) => {
-  const response = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: GM_SYSTEM_MESSAGE,
-      },
-      {
-        role: "user",
-        content: `
-Give me an outline for a campaign that fits with this description:
-"${description}"
-
-These are the player characters for this campaign:
-${players.map((p) => `${p.name} - Level ${p.level} ${p.class} - ${p.background} ${p.race}\n`)}
-
-Include the player characters in the campaign lore in some way.
-
-This outline will not be directly presented to the players, but will be used
-to generate other details later. It should include key characters and locations, explain the
-conflict, and give some brief possible resolutions of the conflict.
-
-Do not include anything in the response other than the text of the story.
-`,
-      },
-    ],
-    model: "llama3-70b-8192",
-    temperature: 1.2,
-  });
-
-  return response.choices[0].message.content;
+  await registerFirstMessages(slug, String(story));
 };
 
-const generateFirstMessage = async (groq: Groq, story: string) => {
-  const response = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: GM_SYSTEM_MESSAGE,
-      },
-      {
-        role: "user",
-        content: `
-Given this story:
-"${story}"
+const registerFirstMessages = async (slug: string, story: string) => {
+  const messages = await generateFirstMessages(story);
 
-Give me what will be the first introduction to the story for the players. 
-It should get the players excited for the journey they are going on, give 
-some hints at the problems they will face, but not reveal too much.
+  console.log(messages);
 
+  await Promise.all(
+    messages.map((m) => registerMessage(slug, m.message, m.speaker)),
+  );
+};
 
-Do not include anything in the response other than the text of the story.
-`,
-      },
-    ],
-    model: "llama3-70b-8192",
+const registerMessage = async (slug: string, message: string, npc?: string) => {
+  if (!npc || npc === "Game Master") {
+    await fetchMutation(api.dnd.insertMessage, {
+      dndId: slug,
+      message: message,
+    });
+  } else {
+    const npcId = await getNPC(slug, npc, `${npc} said: ${message}`);
+    await fetchMutation(api.dnd.insertMessage, {
+      dndId: slug,
+      message: message,
+      npcId,
+    });
+  }
+
+  await updatePlayerContext(slug, message, npc);
+};
+
+const getNPC = async (slug: string, npc: string, message?: string) => {
+  let npcs = await fetchQuery(api.dnd.getCampaignNPCs, { dndId: slug });
+  npcs = npcs || [];
+
+  const response = await parseNPC(npc, npcs, message);
+
+  if (response) {
+    if (response.function.name === "new_npc") {
+      const new_npc = JSON.parse(response.function.arguments) as {
+        name: string;
+        description: string;
+      };
+      return await fetchMutation(api.dnd.insertNPC, {
+        dndId: slug,
+        name: new_npc.name,
+        description: new_npc.description,
+        hidden: false,
+      });
+    } else if (response.function.name === "is_npc") {
+      return JSON.parse(response.function.arguments);
+    }
+  }
+};
+
+const updatePlayerContext = async (
+  slug: string,
+  lastMessage: string,
+  npc?: string,
+) => {
+  const response = await parsePlayerContext(lastMessage, npc);
+
+  if (response) {
+    await fetchMutation(api.dnd.updatePlayerContext, {
+      context: response,
+      dndId: slug,
+    });
+  }
+};
+
+export const updateLocations = async (slug: string) => {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+  let context = "";
+
+  const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });
+  context +=
+    "Campaign Outline\n-------------------\n\n" + campaign?.generated_story!;
+
+  const messages = await fetchQuery(api.dnd.getCampaignMessages, {
+    dndId: slug,
   });
+  if (messages) {
+    const lastMessage = messages[messages.length - 1];
+    context +=
+      "-------------------\n\nLast Campaign Message\n----------------\n\n" +
+      lastMessage.message;
+  }
 
-  return response.choices[0].message.content;
+  const newLocations = await parseInitialLocations(context);
+
+  if (newLocations) {
+    const existingLocations = await fetchQuery(api.dnd.getCampaignLocations, {
+      dndId: slug,
+    });
+
+    console.log(newLocations);
+
+    await Promise.all(
+      newLocations.map(async (l) => {
+        let el = existingLocations?.find((el) => el.name === l.name)?._id;
+
+        if (el === undefined) {
+          el = (await fetchMutation(api.dnd.insertLocation, {
+            name: l.name,
+            description: l.description,
+            hidden: l.hidden,
+            known_info: l.known_info,
+            dndId: slug,
+          }))!;
+        } else {
+          fetchMutation(api.dnd.updateLocation, {
+            id: el,
+            name: l.name,
+            description: l.description,
+            known_info: l.known_info,
+            hidden: l.hidden,
+          });
+        }
+
+        if (l.starting_location) {
+          await fetchMutation(api.dnd.setPlayerStartingLocation, {
+            locationId: el,
+            dndId: slug,
+          });
+        }
+      }),
+    );
+
+    console.log("Locations updated");
+  }
 };

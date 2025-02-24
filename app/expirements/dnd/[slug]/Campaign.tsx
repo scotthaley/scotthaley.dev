@@ -4,11 +4,12 @@ import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { FormEvent, useCallback, useState } from "react";
-import { submitStory } from "./actions";
+import { submitMessage, submitStory, updateLocations } from "./actions";
 
 export default function Campaign({ slug }: { slug: string }) {
   const campaign = useQuery(api.dnd.getCampaign, { dndId: slug });
   const players = useQuery(api.dnd.getCampaignPlayers, { dndId: slug });
+  const locations = useQuery(api.dnd.getCampaignLocations, { dndId: slug });
 
   return campaign === null ? (
     <div>
@@ -16,8 +17,12 @@ export default function Campaign({ slug }: { slug: string }) {
     </div>
   ) : (
     <>
-      {campaign && players && (
-        <CampaignScreen campaign={campaign} players={players} />
+      {campaign && players && locations && (
+        <CampaignScreen
+          campaign={campaign}
+          players={players}
+          locations={locations}
+        />
       )}
     </>
   );
@@ -26,25 +31,37 @@ export default function Campaign({ slug }: { slug: string }) {
 const CampaignScreen = ({
   campaign,
   players,
+  locations,
 }: {
   campaign: Doc<"dnd_campaigns">;
   players: Doc<"dnd_players">[];
+  locations: Doc<"dnd_locations">[];
 }) => {
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const playersAdded = useMutation(api.dnd.playersAdded);
 
   return (
-    <div>
-      <div className="flex justify-center">
-        {campaign && <h1>DND ({campaign.name})</h1>}
+    <div className="h-full flex flex-col">
+      <div className="flex flex-col items-center">
+        <div className="mb-4">{campaign && <h1>DND - {campaign.name}</h1>}</div>
+        <div className="flex">
+          <button
+            className="underline"
+            onClick={() => updateLocations(campaign._id)}
+          >
+            Update Locations
+          </button>
+        </div>
       </div>
-      <div className="mt-12 flex">
-        <div className="w-[300px] bg-code-bg mr-8 p-2">
+      <div className="mt-12 flex flex-grow">
+        <div className="w-[300px] bg-code-bg mr-4 p-2 flex-shrink-0 rounded-md">
           <div className="flex justify-center bg-gray-700 p-2 mb-6">
             <h4>Players</h4>
           </div>
           {players.map((p, i) => (
             <div
-              className="p-2 border-gray-600 border-solid border-2 flex flex-col mb-4"
+              className={`p-2 border-solid border-2 flex flex-col mb-4 cursor-pointer ${selectedPlayer === p._id ? "border-yellow-400" : "border-gray-600"}`}
+              onClick={() => setSelectedPlayer(p._id)}
               key={i}
             >
               <div>{p.name}</div>
@@ -67,10 +84,43 @@ const CampaignScreen = ({
             </div>
           )}
         </div>
-        <div className="flex-grow">
-          <div className="flex justify-center">
-            {renderCurrentScreen(campaign, players)}
+        <div className="flex-grow h-full">
+          <div className="flex justify-center h-full">
+            {renderCurrentScreen(campaign, players, selectedPlayer)}
           </div>
+        </div>
+        <div className="w-[300px] bg-code-bg ml-4 p-2 flex-shrink-0 rounded-md">
+          <div className="flex justify-center bg-gray-700 p-2 mb-6">
+            <h4>Locations</h4>
+          </div>
+          {locations
+            .filter((l) => !l.hidden)
+            .map((l, i) => (
+              <div
+                className="p-2 border-gray-600 border-solid border-2 flex flex-col mb-4"
+                key={i}
+              >
+                <div className="mb-2">{l.name}</div>
+                <div className="text-sm mb-2">{l.known_information}</div>
+                <div className="text-sm">
+                  {players
+                    .filter((p) => p.location === l._id)
+                    .map((p, i) => (
+                      <div key={i}>{p.name}</div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          {campaign.status === "CREATED" && (
+            <div className="mt-6 flex justify-center">
+              <button
+                className="bg-theme-6 text-theme-1 p-2 rounded-md"
+                onClick={() => playersAdded({ dndId: campaign._id })}
+              >
+                Start Campaign
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -80,6 +130,7 @@ const CampaignScreen = ({
 const renderCurrentScreen = (
   campaign: Doc<"dnd_campaigns">,
   players: Doc<"dnd_players">[],
+  selectedPlayer: string | null,
 ) => {
   switch (campaign.status) {
     case "CREATED":
@@ -90,7 +141,70 @@ const renderCurrentScreen = (
       );
     case "STORY_GENERATED":
       return <></>;
+    case "RUNNING":
+      return (
+        <CampaignScreenRunning
+          slug={campaign._id}
+          selectedPlayer={selectedPlayer}
+        />
+      );
   }
+};
+
+const CampaignScreenRunning = ({
+  slug,
+  selectedPlayer,
+}: {
+  slug: string;
+  selectedPlayer: string | null;
+}) => {
+  const [message, setMessage] = useState("");
+  const messages = useQuery(api.dnd.getCampaignMessages, { dndId: slug });
+  const npcs = useQuery(api.dnd.getCampaignNPCs, { dndId: slug });
+
+  const submit = useCallback(() => {
+    if (selectedPlayer !== null) {
+      submitMessage(slug, message, selectedPlayer);
+    }
+  }, [message, selectedPlayer, slug]);
+
+  return (
+    <div className="flex-grow h-full flex flex-col">
+      <div className="w-full h-full bg-code-bg text-[1.2rem] leading-[1.5rem] rounded-md relative">
+        <div className="absolute w-full h-full p-4 pr-8 overflow-auto">
+          {messages &&
+            npcs &&
+            messages.map((m, i) => (
+              <div key={i} className="mb-6 flex">
+                <div className="mr-4 text-nowrap min-w-20 flex-shrink-0">
+                  {m.npc
+                    ? npcs.find((n) => n._id === m.npc)!.name
+                    : "Game Master"}
+                </div>
+                <div>{m.message}</div>
+              </div>
+            ))}
+        </div>
+      </div>
+      <div className="h-[300px] py-4 flex">
+        <textarea
+          className="w-full rounded-md bg-code-bg resize-none p-4 flex-grow"
+          placeholder="What do you want to say or do?"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <div className="px-4 flex flex-col">
+          <button
+            className={`${selectedPlayer == null ? "bg-gray-400" : "bg-theme-6"} text-theme-1 p-4 rounded-md`}
+            disabled={selectedPlayer === null}
+            onClick={submit}
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const CampaignScreenAddPlayers = ({ slug }: { slug: string }) => {
