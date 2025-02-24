@@ -4,7 +4,7 @@ import { Doc } from "@/convex/_generated/dataModel";
 
 export const parseNPC = async (
   npc: string,
-  npcs: Doc<"dnd_npcs">[],
+  npcs: Doc<"dnd_entities">[],
   message?: string,
 ) => {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -42,7 +42,8 @@ ${
         (c) => `
 ID: ${c._id},
 NAME: ${c.name},
-DESCRIPTION: ${c.description}
+FULL INFO: ${c.full_information},
+PLAYER KNOWN INFO: ${c.known_information},
 --------------------------------------------
 `,
       )

@@ -16,13 +16,13 @@ export default defineSchema({
   dnd_messages: defineTable({
     campaignId: v.id("dnd_campaigns"),
     message: v.string(),
-    npc: v.optional(v.id("dnd_npcs")),
+    npc: v.optional(v.id("dnd_entities")),
     player: v.optional(v.id("dnd_players")),
   }).index("by_campaign", ["campaignId"]),
   dnd_players: defineTable({
     campaignId: v.id("dnd_campaigns"),
     name: v.string(),
-    location: v.optional(v.id("dnd_locations")),
+    location: v.optional(v.id("dnd_entities")),
     class: v.string(),
     race: v.string(),
     background: v.string(),
@@ -50,5 +50,19 @@ export default defineSchema({
     description: v.string(),
     known_information: v.optional(v.string()),
     hidden: v.boolean(),
+  }),
+  dnd_entities: defineTable({
+    campaignId: v.id("dnd_campaigns"),
+    name: v.string(),
+    aliases: v.array(v.string()),
+    entity_type: v.union(
+      v.literal("NPC"),
+      v.literal("LOCATION"),
+      v.literal("GROUP"),
+      v.literal("OBJECT"),
+    ),
+    known_information: v.string(),
+    full_information: v.string(),
+    known_to_player: v.boolean(),
   }),
 });

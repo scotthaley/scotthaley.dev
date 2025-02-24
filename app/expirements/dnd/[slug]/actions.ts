@@ -15,6 +15,7 @@ import {
 } from "./prompts/parse_player_message";
 import { parseMessageForEntities } from "./prompts/parse_message_for_entities";
 import { askGM } from "./prompts/ask_gm";
+import { getEntityUpdatesFromMessage } from "./prompts/get_entity_updates_from_message";
 
 export const submitMessage = async (
   slug: string,
@@ -22,8 +23,7 @@ export const submitMessage = async (
   playerId: string,
 ) => {
   const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });
-  const npcs = await fetchQuery(api.dnd.getCampaignNPCs, { dndId: slug });
-  const locations = await fetchQuery(api.dnd.getCampaignLocations, {
+  const known_entities = await fetchQuery(api.dnd.getCampaignEntities, {
     dndId: slug,
   });
   const lastMessage = await fetchQuery(api.dnd.getLastCampaignMessage, {
@@ -35,8 +35,7 @@ export const submitMessage = async (
     campaign === null ||
     lastMessage === null ||
     player === null ||
-    npcs === null ||
-    locations === null
+    known_entities === null
   )
     return;
 
@@ -50,60 +49,49 @@ export const submitMessage = async (
     playerContext,
   );
 
-  console.log(response);
+  await registerMessage(slug, message, undefined, playerId);
 
   if (response === PlayerMessageType.REQUEST_GM_INFO) {
     const entities =
-      (await parseMessageForEntities(message, locations, npcs)) || [];
+      (await parseMessageForEntities(message, known_entities)) || [];
 
     console.log("Entities asked about:", entities);
 
     const question_context = `
 Campaign Outline: "${campaign.generated_story}"
 
-Information about referenced locations:
-${locations
-  .filter((l) => entities.find((e) => e.id === l._id))
-  .map(
-    (l) => `
+Information about known entities:
+${
+  known_entities.length > 0
+    ? known_entities.map(
+        (l) => `
 ID: ${l._id},
 NAME: ${l.name},
-DESCRIPTION: ${l.description}
-INFORMATION THE PLAYER KNOWS: ${l.known_information}
-IS THE LOCATION HIDDEN: ${l.hidden}
+FULL INFO: ${l.full_information},
+PLAYER KNOWN INFO: ${l.known_information},
+KNOWN TO PLAYER: ${l.known_to_player}
 --------------------------------------------
 `,
-  )}
-
-Information about referenced NPCs:
-${npcs
-  .filter((npc) => entities.find((e) => e.id === npc._id))
-  .map(
-    (npc) => `
-ID: ${npc._id},
-NAME: ${npc.name},
-DESCRIPTION: ${npc.description}
-IS THE NPC HIDDEN: ${npc.hidden}
---------------------------------------------
-`,
-  )}
+      )
+    : `There are no known entities`
+}
 `;
+
+    const non_existent_entities = entities
+      .filter((e) => !e.id)
+      .map((e) => e.name);
 
     const gm_response = await askGM(
       message,
       question_context,
       lastMessage.message,
       playerContext,
+      non_existent_entities,
     );
-
-    console.log("GM response:", gm_response);
 
     if (gm_response === null) return;
 
-    const entities_in_response =
-      (await parseMessageForEntities(gm_response, locations, npcs)) || [];
-
-    console.log("Entities from response:", entities_in_response);
+    await registerMessage(slug, gm_response);
   }
 };
 
@@ -135,11 +123,43 @@ const registerFirstMessages = async (slug: string, story: string) => {
   );
 };
 
-const registerMessage = async (slug: string, message: string, npc?: string) => {
+const updateEntitiesFromMessage = async (slug: string, message: string) => {
+  const known_entities = await fetchQuery(api.dnd.getCampaignEntities, {
+    dndId: slug,
+  });
+
+  if (known_entities === null) return;
+
+  const entity_updates =
+    (await getEntityUpdatesFromMessage(message, known_entities)) || [];
+
+  console.log("Update entities:", entity_updates);
+
+  for (const entity of entity_updates) {
+    await fetchMutation(api.dnd.upsertEntity, {
+      dndId: slug,
+      id: entity.id,
+      name: entity.name,
+      aliases: entity.updated_aliases,
+      full_info: entity.updated_full_information,
+      known_info: entity.updated_known_information,
+      known_to_player: entity.known_to_players,
+      entity_type: entity.entity_type,
+    });
+  }
+};
+
+const registerMessage = async (
+  slug: string,
+  message: string,
+  npc?: string,
+  playerId?: string,
+) => {
   if (!npc || npc === "Game Master") {
     await fetchMutation(api.dnd.insertMessage, {
       dndId: slug,
       message: message,
+      playerId,
     });
   } else {
     const npcId = await getNPC(slug, npc, `${npc} said: ${message}`);
@@ -150,7 +170,10 @@ const registerMessage = async (slug: string, message: string, npc?: string) => {
     });
   }
 
-  await updatePlayerContext(slug, message, npc);
+  if (!playerId) {
+    await updatePlayerContext(slug, message, npc);
+    await updateEntitiesFromMessage(slug, message);
+  }
 };
 
 const getNPC = async (slug: string, npc: string, message?: string) => {

@@ -7,6 +7,30 @@
   resolved "https://registry.yarnpkg.com/@alloc/quick-lru/-/quick-lru-5.2.0.tgz#7bf68b20c0a350f936915fcae06f58e32007ce30"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
+"@anush008/tokenizers-darwin-universal@0.0.0":
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/@anush008/tokenizers-darwin-universal/-/tokenizers-darwin-universal-0.0.0.tgz#33d5bccf044d9ee94f7b6131c8f815382f157c24"
+  integrity sha512-SACpWEooTjFX89dFKRVUhivMxxcZRtA3nJGVepdLyrwTkQ1TZQ8581B5JoXp0TcTMHfgnDaagifvVoBiFEdNCQ==
+
+"@anush008/tokenizers-linux-x64-gnu@0.0.0":
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/@anush008/tokenizers-linux-x64-gnu/-/tokenizers-linux-x64-gnu-0.0.0.tgz#49ba055fe3e045e95d52ab360bfecb3cc465c365"
+  integrity sha512-TLjByOPWUEq51L3EJkS+slyH57HKJ7lAz/aBtEt7TIPq4QsE2owOPGovByOLIq1x5Wgh9b+a4q2JasrEFSDDhg==
+
+"@anush008/tokenizers-win32-x64-msvc@0.0.0":
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/@anush008/tokenizers-win32-x64-msvc/-/tokenizers-win32-x64-msvc-0.0.0.tgz#5093a95bf6441abe385a4053ac6aa2b91bd185d8"
+  integrity sha512-/5kP0G96+Cr6947F0ZetXnmL31YCaN15dbNbh2NHg7TXXRwfqk95+JtPP5Q7v4jbR2xxAmuseBqB4H/V7zKWuw==
+
+"@anush008/tokenizers@^0.0.0":
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/@anush008/tokenizers/-/tokenizers-0.0.0.tgz#7bcefa55755acba9a285d95d12b25b57427dda67"
+  integrity sha512-IQD9wkVReKAhsEAbDjh/0KrBGTEXelqZLpOBRDaIRvlzZ9sjmUP+gKbpvzyJnei2JHQiE8JAgj7YcNloINbGBw==
+  optionalDependencies:
+    "@anush008/tokenizers-darwin-universal" "0.0.0"
+    "@anush008/tokenizers-linux-x64-gnu" "0.0.0"
+    "@anush008/tokenizers-win32-x64-msvc" "0.0.0"
+
 "@asamuzakjp/css-color@^2.8.2":
   version "2.8.3"
   resolved "https://registry.yarnpkg.com/@asamuzakjp/css-color/-/css-color-2.8.3.tgz#665f0f5e8edb95d8f543847529e30fe5cc437ef7"
@@ -1196,6 +1220,11 @@ chokidar@^3.6.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
+chownr@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/chownr/-/chownr-2.0.0.tgz#15bfbe53d2eab4cf70f18a8cd68ebe5b3cb1dece"
+  integrity sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==
+
 client-only@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/client-only/-/client-only-0.0.1.tgz#38bba5d403c41ab150bff64a95c85013cf73bca1"
@@ -1963,6 +1992,16 @@ fast-levenshtein@^2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==
 
+fastembed@^1.14.1:
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/fastembed/-/fastembed-1.14.1.tgz#800cc0f1e509a187cf2f4aae7792e4a02f14d063"
+  integrity sha512-Y14v+FWZwjNUpQ7mRGYu4N5yF+hZkF7zqzPWzzLbwdIEtYsHy0DSpiVJ+Fg6Oi1fQjrBKASQt0hdSMSjw1/Wtw==
+  dependencies:
+    "@anush008/tokenizers" "^0.0.0"
+    onnxruntime-node "1.15.1"
+    progress "^2.0.3"
+    tar "^6.2.0"
+
 fastq@^1.6.0:
   version "1.19.0"
   resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.19.0.tgz#a82c6b7c2bb4e44766d865f07997785fecfdcb89"
@@ -2059,6 +2098,13 @@ formdata-node@^4.3.2:
   dependencies:
     node-domexception "1.0.0"
     web-streams-polyfill "4.0.0-beta.3"
+
+fs-minipass@^2.0.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/fs-minipass/-/fs-minipass-2.1.0.tgz#7f5036fdbf12c63c169190cbe4199c852271f9fb"
+  integrity sha512-V/JgOLFCS+R6Vcq0slCuaeWEdNC3ouDlJMNIsacH2VtALiu9mV4LPrHc5cDl8k5aw6J8jwgWWpiTo5RYhmIzvg==
+  dependencies:
+    minipass "^3.0.0"
 
 fsevents@~2.3.2:
   version "2.3.3"
@@ -3313,10 +3359,35 @@ minimist@^1.2.0, minimist@^1.2.6:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
 
+minipass@^3.0.0:
+  version "3.3.6"
+  resolved "https://registry.yarnpkg.com/minipass/-/minipass-3.3.6.tgz#7bba384db3a1520d18c9c0e5251c3444e95dd94a"
+  integrity sha512-DxiNidxSEK+tHG6zOIklvNOwm3hvCrbUrdtzY74U6HKTJxvIDfOUL5W5P2Ghd3DTkhhKPYGqeNUIh5qcM4YBfw==
+  dependencies:
+    yallist "^4.0.0"
+
+minipass@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/minipass/-/minipass-5.0.0.tgz#3e9788ffb90b694a5d0ec94479a45b5d8738133d"
+  integrity sha512-3FnjYuehv9k6ovOEbyOswadCDPX1piCfhV8ncmYtHOjuPwylVWsghTLo7rabjC3Rx5xD4HDx8Wm1xnMF7S5qFQ==
+
 "minipass@^5.0.0 || ^6.0.2 || ^7.0.0", minipass@^7.1.2:
   version "7.1.2"
   resolved "https://registry.yarnpkg.com/minipass/-/minipass-7.1.2.tgz#93a9626ce5e5e66bd4db86849e7515e92340a707"
   integrity sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==
+
+minizlib@^2.1.1:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/minizlib/-/minizlib-2.1.2.tgz#e90d3466ba209b932451508a11ce3d3632145931"
+  integrity sha512-bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==
+  dependencies:
+    minipass "^3.0.0"
+    yallist "^4.0.0"
+
+mkdirp@^1.0.3:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
+  integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
 ms@^2.0.0, ms@^2.1.1, ms@^2.1.3:
   version "2.1.3"
@@ -3456,6 +3527,18 @@ object.values@^1.1.6, object.values@^1.2.0, object.values@^1.2.1:
     call-bound "^1.0.3"
     define-properties "^1.2.1"
     es-object-atoms "^1.0.0"
+
+onnxruntime-common@~1.15.1:
+  version "1.15.1"
+  resolved "https://registry.yarnpkg.com/onnxruntime-common/-/onnxruntime-common-1.15.1.tgz#1b8af102409b5465811a7faef31cf438bded5425"
+  integrity sha512-Y89eJ8QmaRsPZPWLaX7mfqhj63ny47rSkQe80hIo+lvBQdrdXYR9VO362xvZulk9DFkCnXmGidprvgJ07bKsIQ==
+
+onnxruntime-node@1.15.1:
+  version "1.15.1"
+  resolved "https://registry.yarnpkg.com/onnxruntime-node/-/onnxruntime-node-1.15.1.tgz#f201e20029029c7a50b12c90b1b342486ec45f34"
+  integrity sha512-wzhVELulmrvNoMZw0/HfV+9iwgHX+kPS82nxodZ37WCXmbeo1jp3thamTsNg8MGhxvv4GmEzRum5mo40oqIsqw==
+  dependencies:
+    onnxruntime-common "~1.15.1"
 
 optionator@^0.9.3:
   version "0.9.4"
@@ -3670,6 +3753,11 @@ prismjs@~1.27.0:
   version "1.27.0"
   resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.27.0.tgz#bb6ee3138a0b438a3653dd4d6ce0cc6510a45057"
   integrity sha512-t13BGPUlFDR7wRB5kQDG4jjl7XeuH6jbJGt11JHPL96qwsEHNX2+68tFXqc1/k+/jALsbSWJKUOT/hcYAZ5LkA==
+
+progress@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.3.tgz#7e8cf8d8f5b8f239c1bc68beb4eb78567d572ef8"
+  integrity sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==
 
 prop-types@^15.8.1:
   version "15.8.1"
@@ -4346,6 +4434,18 @@ tapable@^2.2.0:
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.2.1.tgz#1967a73ef4060a82f12ab96af86d52fdb76eeca0"
   integrity sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==
 
+tar@^6.2.0:
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-6.2.1.tgz#717549c541bc3c2af15751bea94b1dd068d4b03a"
+  integrity sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==
+  dependencies:
+    chownr "^2.0.0"
+    fs-minipass "^2.0.0"
+    minipass "^5.0.0"
+    minizlib "^2.1.1"
+    mkdirp "^1.0.3"
+    yallist "^4.0.0"
+
 thenify-all@^1.0.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/thenify-all/-/thenify-all-1.6.0.tgz#1a1918d402d8fc3f98fbf234db0bcc8cc10e9726"
@@ -4760,6 +4860,11 @@ xtend@^4.0.0:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
+
+yallist@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
+  integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
 
 yaml@^2.3.4:
   version "2.7.0"

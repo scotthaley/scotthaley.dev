@@ -57,7 +57,28 @@ export const getCampaignLocations = query({
     }
 
     return await ctx.db
-      .query("dnd_locations")
+      .query("dnd_entities")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("campaignId"), id),
+          q.eq(q.field("entity_type"), "LOCATION"),
+        ),
+      )
+      .collect();
+  },
+});
+
+export const getCampaignEntities = query({
+  args: { dndId: v.string() },
+  handler: async (ctx, args) => {
+    const id = ctx.db.normalizeId("dnd_campaigns", args.dndId);
+
+    if (id === null) {
+      return null;
+    }
+
+    return await ctx.db
+      .query("dnd_entities")
       .filter((q) => q.eq(q.field("campaignId"), id))
       .collect();
   },
@@ -73,8 +94,13 @@ export const getCampaignNPCs = query({
     }
 
     return await ctx.db
-      .query("dnd_npcs")
-      .filter((q) => q.eq(q.field("campaignId"), id))
+      .query("dnd_entities")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("campaignId"), id),
+          q.eq(q.field("entity_type"), "NPC"),
+        ),
+      )
       .collect();
   },
 });
@@ -162,7 +188,7 @@ export const setPlayerStartingLocation = mutation({
   },
   handler: async (ctx, args) => {
     const id = ctx.db.normalizeId("dnd_campaigns", args.dndId);
-    const locationId = ctx.db.normalizeId("dnd_locations", args.locationId);
+    const locationId = ctx.db.normalizeId("dnd_entities", args.locationId);
 
     if (id === null || locationId === null) {
       return null;
@@ -193,11 +219,14 @@ export const insertNPC = mutation({
       return null;
     }
 
-    return await ctx.db.insert("dnd_npcs", {
+    return await ctx.db.insert("dnd_entities", {
       campaignId: id,
       name: args.name,
-      description: args.description,
-      hidden: args.hidden,
+      aliases: [],
+      full_information: args.description,
+      known_information: args.description,
+      entity_type: "NPC",
+      known_to_player: !args.hidden,
     });
   },
 });
@@ -206,6 +235,7 @@ export const insertMessage = mutation({
   args: {
     message: v.string(),
     npcId: v.optional(v.string()),
+    playerId: v.optional(v.string()),
     dndId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -217,13 +247,21 @@ export const insertMessage = mutation({
 
     let normalizedNPCId = undefined;
     if (args.npcId) {
-      normalizedNPCId = ctx.db.normalizeId("dnd_npcs", args.npcId) || undefined;
+      normalizedNPCId =
+        ctx.db.normalizeId("dnd_entities", args.npcId) || undefined;
+    }
+
+    let normalizedPlayerId = undefined;
+    if (args.playerId) {
+      normalizedPlayerId =
+        ctx.db.normalizeId("dnd_players", args.playerId) || undefined;
     }
 
     await ctx.db.insert("dnd_messages", {
       campaignId: id,
       message: args.message,
       npc: normalizedNPCId,
+      player: normalizedPlayerId,
     });
   },
 });
@@ -243,19 +281,21 @@ export const insertLocation = mutation({
       return null;
     }
 
-    return await ctx.db.insert("dnd_locations", {
+    return await ctx.db.insert("dnd_entities", {
       campaignId: id,
       name: args.name,
-      description: args.description,
+      aliases: [],
+      full_information: args.description,
       known_information: args.known_info,
-      hidden: args.hidden,
+      entity_type: "LOCATION",
+      known_to_player: !args.hidden,
     });
   },
 });
 
 export const updateLocation = mutation({
   args: {
-    id: v.id("dnd_locations"),
+    id: v.id("dnd_entities"),
     name: v.string(),
     description: v.string(),
     known_info: v.string(),
@@ -264,10 +304,62 @@ export const updateLocation = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
       name: args.name,
-      description: args.description,
+      full_information: args.description,
       known_information: args.known_info,
-      hidden: args.hidden,
+      known_to_player: args.hidden,
     });
+  },
+});
+
+export const upsertEntity = mutation({
+  args: {
+    dndId: v.string(),
+    id: v.optional(v.union(v.string(), v.null())),
+    name: v.string(),
+    aliases: v.array(v.string()),
+    full_info: v.string(),
+    known_info: v.string(),
+    known_to_player: v.boolean(),
+    entity_type: v.union(
+      v.literal("NPC"),
+      v.literal("LOCATION"),
+      v.literal("GROUP"),
+      v.literal("OBJECT"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    if (args.id) {
+      const entityId = ctx.db.normalizeId("dnd_entities", args.id);
+
+      if (entityId === null) {
+        return null;
+      }
+
+      return await ctx.db.patch(entityId, {
+        name: args.name,
+        aliases: args.aliases,
+        full_information: args.full_info,
+        known_information: args.known_info,
+        entity_type: args.entity_type,
+        known_to_player: args.known_to_player,
+      });
+    } else {
+      const campaignId = ctx.db.normalizeId("dnd_campaigns", args.dndId);
+
+      if (campaignId === null) {
+        return null;
+      }
+
+      return await ctx.db.insert("dnd_entities", {
+        campaignId,
+        name: args.name,
+        aliases: args.aliases,
+        full_information: args.full_info,
+        known_information: args.known_info,
+        entity_type: args.entity_type,
+        known_to_player: args.known_to_player,
+      });
+    }
   },
 });
 

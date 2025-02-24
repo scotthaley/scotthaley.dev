@@ -6,6 +6,7 @@ export const askGM = async (
   context: string,
   lastMessage: string,
   playerContext: string,
+  nonExistentEntities: string[],
 ) => {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -36,6 +37,18 @@ to give this information. However, the GM might suggest the player ask the NPC i
 this example. However, your response should never include dialog from NPCs, but 
 should instead suggest that the player ask the NPC themselves. This way the player
 has control over whether or not they actually ask the NPC.
+
+${
+  nonExistentEntities.length > 0
+    ? `
+In the message the player sent, the following entities were referenced which
+could not be found in the existing campaign lore: ${nonExistentEntities.join(", ")}
+
+In your response, you should call out that this entity does not exist and do not
+identify these entities.
+`
+    : ""
+}
 `,
       },
     ],

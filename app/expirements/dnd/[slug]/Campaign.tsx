@@ -35,7 +35,7 @@ const CampaignScreen = ({
 }: {
   campaign: Doc<"dnd_campaigns">;
   players: Doc<"dnd_players">[];
-  locations: Doc<"dnd_locations">[];
+  locations: Doc<"dnd_entities">[];
 }) => {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const playersAdded = useMutation(api.dnd.playersAdded);
@@ -94,7 +94,7 @@ const CampaignScreen = ({
             <h4>Locations</h4>
           </div>
           {locations
-            .filter((l) => !l.hidden)
+            .filter((l) => l.known_to_player)
             .map((l, i) => (
               <div
                 className="p-2 border-gray-600 border-solid border-2 flex flex-col mb-4"
@@ -146,6 +146,7 @@ const renderCurrentScreen = (
         <CampaignScreenRunning
           slug={campaign._id}
           selectedPlayer={selectedPlayer}
+          players={players}
         />
       );
   }
@@ -154,9 +155,11 @@ const renderCurrentScreen = (
 const CampaignScreenRunning = ({
   slug,
   selectedPlayer,
+  players,
 }: {
   slug: string;
   selectedPlayer: string | null;
+  players: Doc<"dnd_players">[];
 }) => {
   const [message, setMessage] = useState("");
   const messages = useQuery(api.dnd.getCampaignMessages, { dndId: slug });
@@ -177,9 +180,11 @@ const CampaignScreenRunning = ({
             messages.map((m, i) => (
               <div key={i} className="mb-6 flex">
                 <div className="mr-4 text-nowrap min-w-20 flex-shrink-0">
-                  {m.npc
-                    ? npcs.find((n) => n._id === m.npc)!.name
-                    : "Game Master"}
+                  {m.player
+                    ? players.find((p) => p._id === m.player)!.name
+                    : m.npc
+                      ? npcs.find((n) => n._id === m.npc)!.name
+                      : "Game Master"}
                 </div>
                 <div>{m.message}</div>
               </div>
