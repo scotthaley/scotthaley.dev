@@ -16,105 +16,119 @@ import {
 import { parseMessageForEntities } from "./prompts/parse_message_for_entities";
 import { askGM } from "./prompts/ask_gm";
 import { getEntityUpdatesFromMessage } from "./prompts/get_entity_updates_from_message";
+import { generateCampaignActs } from "./prompts/generate_campaign_acts";
+import { parseCampaignActs } from "./prompts/parse_campaign_act";
+import { DNDEngine } from "./engine/engine";
 
 export const submitMessage = async (
   slug: string,
   message: string,
   playerId: string,
 ) => {
-  const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });
-  const known_entities = await fetchQuery(api.dnd.getCampaignEntities, {
-    dndId: slug,
-  });
-  const lastMessage = await fetchQuery(api.dnd.getLastCampaignMessage, {
-    dndId: slug,
-  });
-  const player = await fetchQuery(api.dnd.getPlayer, { playerId });
+  const engine = new DNDEngine(slug);
+  await engine.submitMessage(playerId, message);
 
-  if (
-    campaign === null ||
-    lastMessage === null ||
-    player === null ||
-    known_entities === null
-  )
-    return;
-
-  // TODO: better player context?
-  const playerContext = `Name: ${player.name}`;
-
-  const response = await parsePlayerMessage(
-    message,
-    campaign.current_context!,
-    lastMessage.message,
-    playerContext,
-  );
-
-  await registerMessage(slug, message, undefined, playerId);
-
-  if (response === PlayerMessageType.REQUEST_GM_INFO) {
-    const entities =
-      (await parseMessageForEntities(message, known_entities)) || [];
-
-    console.log("Entities asked about:", entities);
-
-    const question_context = `
-Campaign Outline: "${campaign.generated_story}"
-
-Information about known entities:
-${
-  known_entities.length > 0
-    ? known_entities.map(
-        (l) => `
-ID: ${l._id},
-NAME: ${l.name},
-FULL INFO: ${l.full_information},
-PLAYER KNOWN INFO: ${l.known_information},
-KNOWN TO PLAYER: ${l.known_to_player}
---------------------------------------------
-`,
-      )
-    : `There are no known entities`
-}
-`;
-
-    const non_existent_entities = entities
-      .filter((e) => !e.id)
-      .map((e) => e.name);
-
-    const gm_response = await askGM(
-      message,
-      question_context,
-      lastMessage.message,
-      playerContext,
-      non_existent_entities,
-    );
-
-    if (gm_response === null) return;
-
-    await registerMessage(slug, gm_response);
-  }
+  //   const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });
+  //   const current_act = await fetchQuery(api.dnd.getCurrentAct, { dndId: slug });
+  //   const known_entities = await fetchQuery(api.dnd.getCampaignEntities, {
+  //     dndId: slug,
+  //   });
+  //   const lastMessage = await fetchQuery(api.dnd.getLastCampaignMessage, {
+  //     dndId: slug,
+  //   });
+  //   const player = await fetchQuery(api.dnd.getPlayer, { playerId });
+  //
+  //   if (
+  //     campaign === null ||
+  //     lastMessage === null ||
+  //     player === null ||
+  //     known_entities === null ||
+  //     current_act === null
+  //   )
+  //     return;
+  //
+  //   // TODO: better player context?
+  //   const playerContext = `Name: ${player.name}`;
+  //
+  //   const response = await parsePlayerMessage(
+  //     message,
+  //     campaign.current_context!,
+  //     lastMessage.message,
+  //     playerContext,
+  //   );
+  //
+  //   // await registerMessage(slug, message, undefined, playerId);
+  //
+  //   if (response === PlayerMessageType.REQUEST_GM_INFO) {
+  //     const entities =
+  //       (await parseMessageForEntities(message, known_entities)) || [];
+  //
+  //     console.log("Entities asked about:", entities);
+  //
+  //     const question_context = `
+  // Campaign Outline: "${campaign.generated_story}"
+  //
+  // Current act context:
+  // Number: "${current_act.number}"
+  // Name: "${current_act.name}"
+  // Description: "${current_act.description}"
+  // Resolution: "${current_act.resolution}"
+  // Encounters: "${current_act.encounters}"
+  //
+  // Information about known entities:
+  // ${
+  //   known_entities.length > 0
+  //     ? known_entities
+  //         .filter((ke) => entities.find((e) => e.id === ke._id))
+  //         .map(
+  //           (l) => `
+  // ID: ${l._id},
+  // NAME: ${l.name},
+  // FULL INFO: ${l.full_information},
+  // PLAYER KNOWN INFO: ${l.known_information},
+  // KNOWN TO PLAYER: ${l.known_to_player}
+  // --------------------------------------------
+  // `,
+  //         )
+  //     : `There are no known entities`
+  // }
+  // `;
+  //
+  //     const non_existent_entities = entities
+  //       .filter((e) => !e.id)
+  //       .map((e) => e.name);
+  //
+  //     const gm_response = await askGM(
+  //       message,
+  //       question_context,
+  //       lastMessage.message,
+  //       playerContext,
+  //       non_existent_entities,
+  //     );
+  //
+  //     if (gm_response === null) return;
+  //     console.log(gm_response);
+  //
+  //     // await registerMessage(slug, gm_response);
+  //   }
 };
 
-export const submitStory = async (
-  description: string,
+export const submitStory = async (description: string, slug: string) => {
+  const engine = new DNDEngine(slug);
+  await engine.generateCampaign(description);
+};
+
+export const testFirstMessages = async (slug: string) => {
+  const engine = new DNDEngine(slug);
+  await engine.generateFirstMessages();
+};
+
+const registerFirstMessages = async (
   slug: string,
-  players: Doc<"dnd_players">[],
+  outline: string,
+  first_act_context: string,
 ) => {
-  const story = await initialStory(description, players);
-  if (story === null) return;
-
-  console.log(story);
-
-  await fetchMutation(api.dnd.updateStory, {
-    dndId: slug,
-    story,
-  });
-
-  await registerFirstMessages(slug, String(story));
-};
-
-const registerFirstMessages = async (slug: string, story: string) => {
-  const messages = await generateFirstMessages(story);
+  const messages = await generateFirstMessages(outline, first_act_context);
 
   console.log(messages);
 
@@ -216,8 +230,6 @@ const updatePlayerContext = async (
 };
 
 export const updateLocations = async (slug: string) => {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
   let context = "";
 
   const campaign = await fetchQuery(api.dnd.getCampaign, { dndId: slug });

@@ -1,6 +1,18 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function removeUndefinedValues<T extends object>(obj: T): T {
+  const result: Partial<T> = {};
+
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      result[key] = obj[key];
+    }
+  }
+
+  return result as T;
+}
+
 export const getCampaign = query({
   args: { dndId: v.string() },
   handler: async (ctx, args) => {
@@ -11,6 +23,52 @@ export const getCampaign = query({
     }
 
     return await ctx.db.get(id);
+  },
+});
+
+export const updateCampaign = mutation({
+  args: {
+    id: v.id("dnd_campaigns"),
+    name: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("CREATED"),
+        v.literal("PLAYERS_ADDED"),
+        v.literal("STORY_GENERATED"),
+        v.literal("RUNNING"),
+      ),
+    ),
+    generated_story: v.optional(v.string()),
+    current_context: v.optional(v.string()),
+    current_act: v.optional(v.number()),
+    current_room: v.optional(v.id("dnd_entities")),
+    speaking: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    {
+      id,
+      name,
+      status,
+      generated_story,
+      current_context,
+      current_act,
+      current_room,
+      speaking,
+    },
+  ) => {
+    await ctx.db.patch(id, {
+      ...removeUndefinedValues({
+        name,
+        status,
+        generated_story,
+        current_context,
+        current_act,
+        current_room,
+      }),
+      speaking,
+    });
+    return ctx.db.get(id);
   },
 });
 
@@ -26,6 +84,7 @@ export const getCampaignMessages = query({
     return await ctx.db
       .query("dnd_messages")
       .filter((q) => q.eq(q.field("campaignId"), id))
+      .order("desc")
       .collect();
   },
 });
@@ -44,6 +103,17 @@ export const getLastCampaignMessage = query({
       .filter((q) => q.eq(q.field("campaignId"), id))
       .order("desc")
       .first();
+  },
+});
+
+export const getRecentCampaignLog = query({
+  args: { campaignId: v.id("dnd_campaigns") },
+  handler: async (ctx, { campaignId }) => {
+    return await ctx.db
+      .query("dnd_messages")
+      .filter((q) => q.eq(q.field("campaignId"), campaignId))
+      .order("asc")
+      .take(20);
   },
 });
 
@@ -84,6 +154,17 @@ export const getCampaignEntities = query({
   },
 });
 
+export const getCampaignEntity = query({
+  args: { campaignId: v.id("dnd_campaigns"), name: v.string() },
+  handler: async (ctx, { campaignId, name }) => {
+    return await ctx.db
+      .query("dnd_entities")
+      .filter((q) => q.eq(q.field("campaignId"), campaignId))
+      .filter((q) => q.eq(q.field("name"), name))
+      .unique();
+  },
+});
+
 export const getCampaignNPCs = query({
   args: { dndId: v.string() },
   handler: async (ctx, args) => {
@@ -118,6 +199,42 @@ export const getCampaignPlayers = query({
       .query("dnd_players")
       .filter((q) => q.eq(q.field("campaignId"), id))
       .collect();
+  },
+});
+
+export const getCurrentAct = query({
+  args: { dndId: v.string() },
+  handler: async (ctx, args) => {
+    const id = ctx.db.normalizeId("dnd_campaigns", args.dndId);
+
+    if (id === null) {
+      return null;
+    }
+
+    const campaign = await ctx.db.get(id);
+
+    return await ctx.db
+      .query("dnd_campaign_acts")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("campaignId"), id),
+          q.eq(q.field("number"), campaign?.current_act),
+        ),
+      )
+      .unique();
+  },
+});
+
+export const getCurrentRoom = query({
+  args: { campaignId: v.id("dnd_campaigns") },
+  handler: async (ctx, { campaignId }) => {
+    const campaign = await ctx.db.get(campaignId);
+
+    if (!campaign?.current_room) {
+      return null;
+    }
+
+    return await ctx.db.get(campaign?.current_room);
   },
 });
 
@@ -161,6 +278,7 @@ export const updateStory = mutation({
 
     await ctx.db.patch(id, {
       generated_story: args.story,
+      current_act: 1,
       status: "RUNNING",
     });
   },
@@ -234,34 +352,18 @@ export const insertNPC = mutation({
 export const insertMessage = mutation({
   args: {
     message: v.string(),
-    npcId: v.optional(v.string()),
-    playerId: v.optional(v.string()),
-    dndId: v.string(),
+    speaker: v.string(),
+    summary: v.string(),
+    campaignId: v.id("dnd_campaigns"),
+    to_gm: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const id = ctx.db.normalizeId("dnd_campaigns", args.dndId);
-
-    if (id === null) {
-      return null;
-    }
-
-    let normalizedNPCId = undefined;
-    if (args.npcId) {
-      normalizedNPCId =
-        ctx.db.normalizeId("dnd_entities", args.npcId) || undefined;
-    }
-
-    let normalizedPlayerId = undefined;
-    if (args.playerId) {
-      normalizedPlayerId =
-        ctx.db.normalizeId("dnd_players", args.playerId) || undefined;
-    }
-
+  handler: async (ctx, { campaignId, message, speaker, summary, to_gm }) => {
     await ctx.db.insert("dnd_messages", {
-      campaignId: id,
-      message: args.message,
-      npc: normalizedNPCId,
-      player: normalizedPlayerId,
+      campaignId,
+      message,
+      speaker,
+      summary,
+      to_gm,
     });
   },
 });
@@ -311,6 +413,70 @@ export const updateLocation = mutation({
   },
 });
 
+export const insertActs = mutation({
+  args: {
+    campaignId: v.id("dnd_campaigns"),
+    acts: v.array(
+      v.object({
+        name: v.string(),
+        number: v.number(),
+        description: v.string(),
+        resolution: v.string(),
+        encounters: v.array(
+          v.object({
+            encounter_description: v.string(),
+            story_importance: v.string(),
+          }),
+        ),
+      }),
+    ),
+  },
+  handler: async (ctx, { campaignId, acts }) => {
+    for (const a of acts) {
+      await ctx.db.insert("dnd_campaign_acts", {
+        campaignId,
+        number: a.number,
+        name: a.name,
+        description: a.description,
+        resolution: a.resolution,
+        encounters: a.encounters,
+      });
+    }
+  },
+});
+
+export const insertAct = mutation({
+  args: {
+    dndId: v.string(),
+    name: v.string(),
+    number: v.number(),
+    description: v.string(),
+    resolution: v.string(),
+    encounters: v.array(
+      v.object({
+        encounter_description: v.string(),
+        story_importance: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const campaignId = ctx.db.normalizeId("dnd_campaigns", args.dndId);
+
+    if (campaignId === null) {
+      return null;
+    }
+
+    return await ctx.db.insert("dnd_campaign_acts", {
+      campaignId,
+      number: args.number,
+      name: args.name,
+      description: args.description,
+      resolution: args.resolution,
+      encounters: args.encounters,
+    });
+  },
+});
+
 export const upsertEntity = mutation({
   args: {
     dndId: v.string(),
@@ -335,7 +501,7 @@ export const upsertEntity = mutation({
         return null;
       }
 
-      return await ctx.db.patch(entityId, {
+      await ctx.db.patch(entityId, {
         name: args.name,
         aliases: args.aliases,
         full_information: args.full_info,
@@ -343,6 +509,7 @@ export const upsertEntity = mutation({
         entity_type: args.entity_type,
         known_to_player: args.known_to_player,
       });
+      return ctx.db.get(entityId);
     } else {
       const campaignId = ctx.db.normalizeId("dnd_campaigns", args.dndId);
 
@@ -350,7 +517,7 @@ export const upsertEntity = mutation({
         return null;
       }
 
-      return await ctx.db.insert("dnd_entities", {
+      const id = await ctx.db.insert("dnd_entities", {
         campaignId,
         name: args.name,
         aliases: args.aliases,
@@ -359,6 +526,7 @@ export const upsertEntity = mutation({
         entity_type: args.entity_type,
         known_to_player: args.known_to_player,
       });
+      return ctx.db.get(id);
     }
   },
 });

@@ -1,8 +1,8 @@
 import { Doc } from "@/convex/_generated/dataModel";
 import Groq from "groq-sdk";
-import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
+import { SYSTEM_MESSAGE_GAME_DESIGNER } from "../constants";
 
-export const initialStory = async (
+export const generateOutlinePrompt = async (
   description: string,
   players: Doc<"dnd_players">[],
 ) => {
@@ -12,7 +12,7 @@ export const initialStory = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_CREATIVE_MESSAGE,
+        content: SYSTEM_MESSAGE_GAME_DESIGNER,
       },
       {
         role: "user",
@@ -45,7 +45,7 @@ Do not include anything in the response other than the text of the outline.
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_CREATIVE_MESSAGE,
+        content: SYSTEM_MESSAGE_GAME_DESIGNER,
       },
       {
         role: "user",

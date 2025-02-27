@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
 import { Doc } from "@/convex/_generated/dataModel";
 
 export const parseNPC = async (
@@ -13,7 +13,7 @@ export const parseNPC = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_CREATIVE_MESSAGE,
       },
       {
         role: "user",

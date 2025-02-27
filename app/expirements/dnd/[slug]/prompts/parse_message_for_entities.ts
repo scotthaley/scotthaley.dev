@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
 import { Doc } from "@/convex/_generated/dataModel";
 
 export const parseMessageForEntities = async (
@@ -12,7 +12,7 @@ export const parseMessageForEntities = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_CREATIVE_MESSAGE,
       },
       {
         role: "user",
@@ -31,13 +31,14 @@ ${
         (l) => `
 ID: ${l._id},
 NAME: ${l.name},
+ENTITY TYPE: ${l.entity_type}
 FULL INFO: ${l.full_information},
 PLAYER KNOWN INFO: ${l.known_information},
 KNOWN TO PLAYER: ${l.known_to_player}
 --------------------------------------------
 `,
       )
-    : `There are no registered locations`
+    : `There are no known entities`
 }
 `,
       },
@@ -59,7 +60,7 @@ KNOWN TO PLAYER: ${l.known_to_player}
                   entity_type: {
                     type: "string",
                     description: "The type of entity this represents.",
-                    enum: ["NPC", "LOCATION"],
+                    enum: ["NPC", "LOCATION", "GROUP", "OBJECT"],
                   },
                   id: {
                     type: "string",

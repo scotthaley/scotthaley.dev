@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
 import { Doc } from "@/convex/_generated/dataModel";
 
 export const getEntityUpdatesFromMessage = async (
@@ -12,7 +12,7 @@ export const getEntityUpdatesFromMessage = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_CREATIVE_MESSAGE,
       },
       {
         role: "user",
@@ -32,6 +32,8 @@ and does not need to be complete sentences as it won't be viewable by player cha
 but only used for providing context in future prompts.
 
 If an alias is used for an entity, include in updated_aliases in the identification.
+
+Include all entities in your identify_entities tool call, including NPCs, Locations, Objects, and Groups (Organizations)
 
 Here is a list of known entities:
 ${
@@ -59,41 +61,39 @@ KNOWN TO PLAYER: ${l.known_to_player}
           name: "identify_entities",
           description: "Used to identify entities in a given message",
           parameters: {
+            type: "array",
             entities: {
-              type: "array",
-              entities: {
-                type: "object",
-                description: "Represents either an NPC or a location.",
-                parameters: {
+              type: "object",
+              description: "Represents either an NPC or a location.",
+              parameters: {
+                name: "string",
+                entity_type: {
+                  type: "string",
+                  description: "The type of entity this represents.",
+                  enum: ["NPC", "LOCATION", "GROUP", "OBJECT"],
+                },
+                id: {
+                  type: "string",
+                  description:
+                    "The ID of the entity or null if this represents an unknown entity.",
+                },
+                updated_aliases: {
+                  type: "array",
                   name: "string",
-                  entity_type: {
-                    type: "string",
-                    description: "The type of entity this represents.",
-                    enum: ["NPC", "LOCATION", "GROUP", "OBJECT"],
-                  },
-                  id: {
-                    type: "string",
-                    description:
-                      "The ID of the entity or null if this represents an unknown entity.",
-                  },
-                  updated_aliases: {
-                    type: "array",
-                    name: "string",
-                  },
-                  updated_full_information: {
-                    type: "string",
-                    description:
-                      "Succinct summary of all background information for this entity.",
-                  },
-                  updated_known_information: {
-                    type: "string",
-                    description:
-                      "Succinct summary of all information the players would know about this entity.",
-                  },
-                  known_to_players: {
-                    type: "boolean",
-                    description: "Is this entity known to the players?",
-                  },
+                },
+                updated_full_information: {
+                  type: "string",
+                  description:
+                    "Succinct summary of all background information for this entity.",
+                },
+                updated_known_information: {
+                  type: "string",
+                  description:
+                    "Succinct summary of all information the players would know about this entity.",
+                },
+                known_to_players: {
+                  type: "boolean",
+                  description: "Is this entity known to the players?",
                 },
               },
             },

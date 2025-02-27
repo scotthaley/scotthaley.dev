@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
 
 export const parseInitialLocations = async (context: string) => {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -8,7 +8,7 @@ export const parseInitialLocations = async (context: string) => {
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_CREATIVE_MESSAGE,
       },
       {
         role: "user",

@@ -4,7 +4,12 @@ import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { FormEvent, useCallback, useState } from "react";
-import { submitMessage, submitStory, updateLocations } from "./actions";
+import {
+  submitMessage,
+  submitStory,
+  testFirstMessages,
+  updateLocations,
+} from "./actions";
 
 export default function Campaign({ slug }: { slug: string }) {
   const campaign = useQuery(api.dnd.getCampaign, { dndId: slug });
@@ -50,6 +55,13 @@ const CampaignScreen = ({
             onClick={() => updateLocations(campaign._id)}
           >
             Update Locations
+          </button>
+          <div className="mx-6">|</div>
+          <button
+            className="underline"
+            onClick={() => testFirstMessages(campaign._id)}
+          >
+            Test First Message
           </button>
         </div>
       </div>
@@ -97,11 +109,10 @@ const CampaignScreen = ({
             .filter((l) => l.known_to_player)
             .map((l, i) => (
               <div
-                className="p-2 border-gray-600 border-solid border-2 flex flex-col mb-4"
+                className={`p-2 ${l._id === campaign.current_room ? "border-yellow-400" : "border-gray-600"} border-solid border-2 flex flex-col mb-4`}
                 key={i}
               >
                 <div className="mb-2">{l.name}</div>
-                <div className="text-sm mb-2">{l.known_information}</div>
                 <div className="text-sm">
                   {players
                     .filter((p) => p.location === l._id)
@@ -146,7 +157,7 @@ const renderCurrentScreen = (
         <CampaignScreenRunning
           slug={campaign._id}
           selectedPlayer={selectedPlayer}
-          players={players}
+          campaign={campaign}
         />
       );
   }
@@ -155,11 +166,11 @@ const renderCurrentScreen = (
 const CampaignScreenRunning = ({
   slug,
   selectedPlayer,
-  players,
+  campaign,
 }: {
   slug: string;
   selectedPlayer: string | null;
-  players: Doc<"dnd_players">[];
+  campaign: Doc<"dnd_campaigns">;
 }) => {
   const [message, setMessage] = useState("");
   const messages = useQuery(api.dnd.getCampaignMessages, { dndId: slug });
@@ -174,17 +185,22 @@ const CampaignScreenRunning = ({
   return (
     <div className="flex-grow h-full flex flex-col">
       <div className="w-full h-full bg-code-bg text-[1.2rem] leading-[1.5rem] rounded-md relative">
-        <div className="absolute w-full h-full p-4 pr-8 overflow-auto">
+        <div className="absolute w-full h-full p-4 pr-8 overflow-auto flex flex-col-reverse">
+          {campaign.speaking && (
+            <div className="mb-6 flex">
+              <div className="mr-4 text-nowrap min-w-20 flex-shrink-0">
+                {campaign.speaking}
+              </div>
+              <div>...</div>
+            </div>
+          )}
           {messages &&
             npcs &&
             messages.map((m, i) => (
               <div key={i} className="mb-6 flex">
                 <div className="mr-4 text-nowrap min-w-20 flex-shrink-0">
-                  {m.player
-                    ? players.find((p) => p._id === m.player)!.name
-                    : m.npc
-                      ? npcs.find((n) => n._id === m.npc)!.name
-                      : "Game Master"}
+                  <div>{m.speaker}</div>
+                  {m.to_gm && <div className="text-sm">To GM</div>}
                 </div>
                 <div>{m.message}</div>
               </div>
@@ -424,7 +440,7 @@ const CampaignScreenGenerateStory = ({
   );
 
   const submit = useCallback(() => {
-    submitStory(story, slug, players);
+    submitStory(story, slug);
   }, [story]);
 
   return (

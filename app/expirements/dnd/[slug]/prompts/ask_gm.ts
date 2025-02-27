@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_RUNNER_MESSAGE } from "./constants";
 
 export const askGM = async (
   message: string,
@@ -14,12 +14,12 @@ export const askGM = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_RUNNER_MESSAGE,
       },
       {
         role: "user",
         content: `
-A player has asked you, as the GM, for additional information. 
+A player has asked you, as the game master (GM), for additional information. 
 
 Here is the message the player sent: "${message}".
 Here is the last message the player received before sending this message: "${lastMessage}".
@@ -31,12 +31,17 @@ is consistent with the rest of the context and doesn't completely disrupt the
 campaign story. Information given here would only be information that the player
 characters would reasonably be able to sense in the game world. 
 
-For example, if a player asks if an NPC grew up in some town, the player would not
-be able to sense this without asking the NPC, therefor the GM would not be able
-to give this information. However, the GM might suggest the player ask the NPC in 
-this example. However, your response should never include dialog from NPCs, but 
-should instead suggest that the player ask the NPC themselves. This way the player
-has control over whether or not they actually ask the NPC.
+No actions or dialog should happen in the world as a result of a question asked 
+to the GM. The only information given in response should be information that the
+player characters would already know. 
+
+Answer the players question in character as the game master. You do not need to 
+say who you are, or give any extra exposition, just answer the question asked. 
+Give a small amount of information, generally only answering exactly what was asked.
+The game is more fun of players have to think for themselves and ask questions
+rather than being given all of the info. Answers should be 1 or 2 sentences. 
+Answer as if you were just directly asked a question. It is okay to say you do
+not have an answer.
 
 ${
   nonExistentEntities.length > 0
@@ -52,7 +57,7 @@ identify these entities.
 `,
       },
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     temperature: 1.4,
   });
 

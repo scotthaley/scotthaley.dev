@@ -12,12 +12,29 @@ export default defineSchema({
     ),
     generated_story: v.optional(v.string()),
     current_context: v.optional(v.string()),
+    current_act: v.optional(v.number()),
+    current_room: v.optional(v.id("dnd_entities")),
+    speaking: v.optional(v.string()),
+  }),
+  dnd_campaign_acts: defineTable({
+    campaignId: v.id("dnd_campaigns"),
+    number: v.number(),
+    name: v.string(),
+    description: v.string(),
+    resolution: v.string(),
+    encounters: v.array(
+      v.object({
+        encounter_description: v.string(),
+        story_importance: v.string(),
+      }),
+    ),
   }),
   dnd_messages: defineTable({
     campaignId: v.id("dnd_campaigns"),
     message: v.string(),
-    npc: v.optional(v.id("dnd_entities")),
-    player: v.optional(v.id("dnd_players")),
+    speaker: v.string(),
+    summary: v.string(),
+    to_gm: v.optional(v.boolean()),
   }).index("by_campaign", ["campaignId"]),
   dnd_players: defineTable({
     campaignId: v.id("dnd_campaigns"),
@@ -36,20 +53,6 @@ export default defineSchema({
     intelligence: v.number(),
     wisdom: v.number(),
     charisma: v.number(),
-  }),
-  dnd_npcs: defineTable({
-    campaignId: v.id("dnd_campaigns"),
-    name: v.string(),
-    description: v.string(),
-    location: v.optional(v.id("dnd_locations")),
-    hidden: v.boolean(),
-  }),
-  dnd_locations: defineTable({
-    campaignId: v.id("dnd_campaigns"),
-    name: v.string(),
-    description: v.string(),
-    known_information: v.optional(v.string()),
-    hidden: v.boolean(),
   }),
   dnd_entities: defineTable({
     campaignId: v.id("dnd_campaigns"),

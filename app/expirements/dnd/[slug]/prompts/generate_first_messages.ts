@@ -1,20 +1,26 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_RUNNER_MESSAGE } from "./constants";
 
-export const generateFirstMessages = async (story: string) => {
+export const generateFirstMessages = async (
+  outline: string,
+  first_act_context: string,
+) => {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
   const response = await groq.chat.completions.create({
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_RUNNER_MESSAGE,
       },
       {
         role: "user",
         content: `
-Given this story:
-"${story}"
+Here is the campaign outline:
+"${outline}"
+
+Here is the description of the first act of the campaign:
+"${first_act_context}"
 
 Register a couple messages that  will be the first introduction to the story for the players. 
 It should get the players excited for the journey they are going on, give 

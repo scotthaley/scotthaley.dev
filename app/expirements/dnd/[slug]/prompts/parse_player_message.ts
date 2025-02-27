@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { GM_SYSTEM_MESSAGE } from "./constants";
+import { GM_SYSTEM_CREATIVE_MESSAGE } from "./constants";
 
 export enum PlayerMessageType {
   "REQUEST_NPC_INFO" = "REQUEST_NPC_INFO",
@@ -19,7 +19,7 @@ export const parsePlayerMessage = async (
     messages: [
       {
         role: "system",
-        content: GM_SYSTEM_MESSAGE,
+        content: GM_SYSTEM_CREATIVE_MESSAGE,
       },
       {
         role: "user",
